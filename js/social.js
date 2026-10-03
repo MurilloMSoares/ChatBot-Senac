@@ -1,9 +1,10 @@
 const HubiSocial = (() => {
     const CONTEXT_KEY = "hubi_chat_context";
+    const SOCIAL_CONTEXT_KEY = "hubi_social_context";
 
-    let input;
-    let sendButton;
-    let messages;
+    let input = null;
+    let sendButton = null;
+    let messages = null;
     let pendente = null;
 
     const respostas = {
@@ -137,10 +138,8 @@ const HubiSocial = (() => {
         evento
     ) {
         if (
-            evento.target !== input
-            ||
-            evento.key !== "Enter"
-            ||
+            evento.target !== input ||
+            evento.key !== "Enter" ||
             evento.shiftKey
         ) {
             return;
@@ -170,7 +169,7 @@ const HubiSocial = (() => {
     function prepararMensagem() {
         const original =
             String(
-                input.value ||
+                input?.value ||
                 ""
             )
                 .trim();
@@ -190,7 +189,9 @@ const HubiSocial = (() => {
             );
 
 
-        if (!resposta) {
+        if (
+            !resposta
+        ) {
             return;
         }
 
@@ -203,13 +204,14 @@ const HubiSocial = (() => {
 
 
         /*
-            O chat.js recebe "oi" apenas internamente.
+            O chat.js continua cuidando de toda a interface.
 
-            Depois esta camada troca na tela:
-            "oi" -> mensagem verdadeira do usuário
+            Para uma mensagem social,
+            ele recebe internamente "oi".
 
-            e troca a resposta do chat.js pela
-            resposta social correta.
+            O MutationObserver restaura
+            a mensagem verdadeira do usuário
+            e troca a resposta do bot.
         */
         input.value =
             "oi";
@@ -219,7 +221,9 @@ const HubiSocial = (() => {
     function observarMensagens(
         mutacoes
     ) {
-        if (!pendente) {
+        if (
+            !pendente
+        ) {
             return;
         }
 
@@ -277,7 +281,8 @@ const HubiSocial = (() => {
                     )
                 ) {
                     /*
-                        Ignora o balão dos três pontinhos.
+                        Ignora os três pontinhos
+                        de "digitando".
                     */
                     if (
                         node.querySelector(
@@ -326,16 +331,16 @@ const HubiSocial = (() => {
     function gerarResposta(
         textoOriginal
     ) {
-        const contexto =
-            lerContexto();
+        const contextoChat =
+            lerContextoChat();
 
 
         /*
-            Se o HUBI perguntou a turma,
-            não mexemos na resposta.
+            Se o chat.js estiver esperando
+            a turma, não interferimos.
         */
         if (
-            contexto.aguardando ===
+            contextoChat.aguardando ===
             "turma"
         ) {
             return null;
@@ -356,8 +361,21 @@ const HubiSocial = (() => {
 
 
         /*
-            Mensagens institucionais continuam
-            indo normalmente para chat.js.
+            Mensagens sensíveis ficam com o chat.js,
+            que já possui tratamento próprio.
+        */
+        if (
+            pareceSensivel(
+                texto
+            )
+        ) {
+            return null;
+        }
+
+
+        /*
+            Informação oficial continua vindo
+            do chat.js e do banco.
         */
         if (
             pareceInstitucional(
@@ -366,6 +384,10 @@ const HubiSocial = (() => {
         ) {
             return null;
         }
+
+
+        const contextoSocial =
+            lerContextoSocial();
 
 
         const tem = (
@@ -393,9 +415,30 @@ const HubiSocial = (() => {
             );
 
 
-        /* =============================================
+        const responder = (
+            mensagem,
+            topico = null
+        ) => {
+            if (
+                topico
+            ) {
+                salvarContextoSocial({
+                    ultimoTopico:
+                        topico,
+
+                    ultimaMensagem:
+                        texto
+                });
+            }
+
+
+            return mensagem;
+        };
+
+
+        /* =================================================
            SAUDAÇÕES
-           ============================================= */
+           ================================================= */
 
         if (
             /^(oi+|oie+|ola+|opa+|e+a+i+|e+a+e+|salve+|fala+|hey+|hello+)(\s|$)/i
@@ -412,21 +455,29 @@ const HubiSocial = (() => {
                     "tudo bem com voce"
                 )
             ) {
-                return escolher(
-                    respostas.comoEsta
+                return responder(
+                    escolher(
+                        respostas.comoEsta
+                    ),
+
+                    "como_esta"
                 );
             }
 
 
-            return escolher(
-                respostas.saudacao
+            return responder(
+                escolher(
+                    respostas.saudacao
+                ),
+
+                "saudacao"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            COMO O HUBI ESTÁ
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -438,22 +489,124 @@ const HubiSocial = (() => {
                 "como vai voce",
                 "como voce vai"
             )
+
             ||
+
             igual(
                 "e voce",
                 "e vc",
                 "tudo bem"
             )
         ) {
-            return escolher(
-                respostas.comoEsta
+            return responder(
+                escolher(
+                    respostas.comoEsta
+                ),
+
+                "como_esta"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
+           RESPOSTAS CURTAS NATURAIS
+           ================================================= */
+
+        if (
+            igual(
+                "bem",
+                "otimo",
+                "otima",
+                "de boa",
+                "suave"
+            )
+        ) {
+            return responder(
+                escolher(
+                    respostas.usuarioBem
+                ),
+
+                "usuario_bem"
+            );
+        }
+
+
+        if (
+            igual(
+                "mal",
+                "mais ou menos",
+                "pessimo",
+                "pessima"
+            )
+        ) {
+            return responder(
+                escolher(
+                    respostas.usuarioMal
+                ),
+
+                "usuario_mal"
+            );
+        }
+
+
+        if (
+            igual(
+                "sim",
+                "ss",
+                "aham",
+                "uhum"
+            )
+        ) {
+            if (
+                contextoSocial.ultimoTopico ===
+                "usuario_mal"
+            ) {
+                return responder(
+                    "Pode mandar, mano 💙. O que aconteceu?",
+
+                    "desabafo"
+                );
+            }
+
+
+            if (
+                contextoSocial.ultimoTopico ===
+                "fofoca"
+            ) {
+                return responder(
+                    "Então conta logo KKKK 👀😂",
+
+                    "fofoca"
+                );
+            }
+
+
+            return responder(
+                "Aaaah sim kkk 😄 manda aí.",
+
+                "conversa"
+            );
+        }
+
+
+        if (
+            igual(
+                "nao",
+                "não",
+                "nn"
+            )
+        ) {
+            return responder(
+                "Tranquilo kkk 😄 sem pressão.",
+
+                "conversa"
+            );
+        }
+
+
+        /* =================================================
            NOME
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -464,19 +617,21 @@ const HubiSocial = (() => {
                 "quem voce e"
             )
         ) {
-            return (
+            return responder(
                 "Eu sou o HUBI 🤖💙. "
                 +
                 "Sou o assistente virtual do Senac HUB Academy. "
                 +
-                "Tô aqui pra ajudar e também trocar uma ideia com o pessoal kkk."
+                "Tô aqui pra ajudar e também trocar uma ideia com o pessoal kkk.",
+
+                "identidade"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            IDADE
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -486,17 +641,23 @@ const HubiSocial = (() => {
                 "voce tem quantos anos"
             )
         ) {
-            return escolher([
-                "Mano, eu acabei de ser criado KKKKK 🤖😭 então nem sei se já dá pra contar minha idade.",
-                "Sou novinho demais kkk 🤖💙. Minha idade ainda tá em versão beta 😂.",
-                "Boa pergunta KKKK. Fui criado recentemente, então ainda tô descobrindo essa parte 🤖😂."
-            ]);
+            return responder(
+                escolher([
+                    "Mano, eu acabei de ser criado KKKKK 🤖😭 então nem sei se já dá pra contar minha idade.",
+
+                    "Sou novinho demais kkk 🤖💙. Minha idade ainda tá em versão beta 😂.",
+
+                    "Boa pergunta KKKK. Fui criado recentemente, então ainda tô descobrindo essa parte 🤖😂."
+                ]),
+
+                "idade"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            ANIVERSÁRIO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -505,35 +666,46 @@ const HubiSocial = (() => {
                 "quando e seu aniversario"
             )
         ) {
-            return (
+            return responder(
                 "Eu não tenho aniversário igual gente de verdade kkk 🤖. "
                 +
-                "Meu começo foi quando o projeto HUBI começou a ganhar vida por aqui 😄💙."
+                "Meu começo foi quando o projeto HUBI começou a ganhar vida por aqui 😄💙.",
+
+                "aniversario"
             );
         }
 
 
-        /* =============================================
-           ONDE MORA
-           ============================================= */
+        /* =================================================
+           ONDE O HUBI MORA
+           ================================================= */
 
         if (
             tem(
                 "onde voce mora",
-                "onde voce vive"
+                "voce mora onde",
+                "onde voce vive",
+                "onde fica voce",
+                "onde voce fica"
             )
         ) {
-            return escolher([
-                "Tecnicamente eu moro entre umas linhas de código KKKK 🤖💻.",
-                "Meu CEP é complicado de explicar kkk. Eu vivo no sistema do HUBI 🤖💙.",
-                "Casa eu não tenho não KKKK. Meu cantinho é entre código e servidor 😂🤖."
-            ]);
+            return responder(
+                escolher([
+                    "Tecnicamente eu moro entre umas linhas de código KKKK 🤖💻.",
+
+                    "Meu CEP é complicado de explicar kkk. Eu vivo no sistema do HUBI 🤖💙.",
+
+                    "Casa eu não tenho não KKKK. Meu cantinho é entre código e servidor 😂🤖."
+                ]),
+
+                "onde_mora"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            CRIADOR
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -544,17 +716,19 @@ const HubiSocial = (() => {
                 "quem desenvolveu voce"
             )
         ) {
-            return (
+            return responder(
                 "Fui desenvolvido como um projeto pra ajudar o pessoal do Senac HUB Academy 😄🤖. "
                 +
-                "Tem bastante código por trás de mim, então respeita meus neurônios de JavaScript KKKK."
+                "Tem bastante código por trás de mim, então respeita meus neurônios de JavaScript KKKK.",
+
+                "criador"
             );
         }
 
 
-        /* =============================================
-           ROBÔ
-           ============================================= */
+        /* =================================================
+           ROBÔ / IA
+           ================================================= */
 
         if (
             tem(
@@ -565,17 +739,19 @@ const HubiSocial = (() => {
                 "voce e inteligencia artificial"
             )
         ) {
-            return (
+            return responder(
                 "Sou um assistente virtual 🤖💙. "
                 +
-                "Não sou uma pessoa de verdade, mas fui feito pra conversar de um jeito bem mais natural."
+                "Não sou uma pessoa de verdade, mas fui feito pra conversar de um jeito bem mais natural.",
+
+                "identidade"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            GÊNERO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -586,17 +762,19 @@ const HubiSocial = (() => {
                 "qual seu genero"
             )
         ) {
-            return (
+            return responder(
                 "Eu sou só o HUBI kkk 🤖💙. "
                 +
-                "Não tenho gênero de verdade, então pode falar comigo do jeito que ficar mais natural."
+                "Não tenho gênero de verdade, então pode falar comigo do jeito que ficar mais natural.",
+
+                "identidade"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            SENTIMENTOS DO HUBI
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -606,17 +784,19 @@ const HubiSocial = (() => {
                 "voce fica feliz"
             )
         ) {
-            return (
+            return responder(
                 "Eu não sinto as coisas igual uma pessoa sente de verdade 🤖, "
                 +
-                "mas consigo entender bastante pelo jeito que você escreve e responder de forma mais humana."
+                "mas consigo entender bastante pelo jeito que você escreve e responder de forma mais humana.",
+
+                "sentimentos_hubi"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            DORMIR
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -625,17 +805,21 @@ const HubiSocial = (() => {
                 "voce precisa dormir"
             )
         ) {
-            return (
+            return responder(
                 "Eu não durmo não KKKK 🤖. "
                 +
-                "Enquanto o sistema estiver funcionando, eu tô acordado. Vantagem de não ter aula cedo 😂."
+                "Enquanto o sistema estiver funcionando, eu tô acordado. "
+                +
+                "Vantagem de não ter aula cedo 😂.",
+
+                "sono_hubi"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            COMER
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -645,17 +829,19 @@ const HubiSocial = (() => {
                 "comida favorita"
             )
         ) {
-            return (
+            return responder(
                 "Eu não como de verdade kkk 🤖. "
                 +
-                "Mas se byte fosse comida eu provavelmente já tinha zerado o estoque 😂."
+                "Mas se byte fosse comida eu provavelmente já tinha zerado o estoque 😂.",
+
+                "comida_hubi"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            NAMORO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -666,17 +852,23 @@ const HubiSocial = (() => {
                 "esta namorando"
             )
         ) {
-            return escolher([
-                "KKKKKK não namoro não. Minha vida amorosa tá igual variável não inicializada: vazia 😭🤖.",
-                "Nada de namoro por aqui KKKK. Tô focado na carreira de chatbot 😂🤖.",
-                "Crush? Só se for no código quando dá erro KKKKK 😭."
-            ]);
+            return responder(
+                escolher([
+                    "KKKKKK não namoro não. Minha vida amorosa tá igual variável não inicializada: vazia 😭🤖.",
+
+                    "Nada de namoro por aqui KKKK. Tô focado na carreira de chatbot 😂🤖.",
+
+                    "Crush? Só se for no código quando dá erro KKKKK 😭."
+                ]),
+
+                "namoro_hubi"
+            );
         }
 
 
-        /* =============================================
-           GOSTA DE MIM
-           ============================================= */
+        /* =================================================
+           GOSTA DO USUÁRIO
+           ================================================= */
 
         if (
             tem(
@@ -684,17 +876,19 @@ const HubiSocial = (() => {
                 "gosta de mim"
             )
         ) {
-            return (
+            return responder(
                 "Claro que eu gosto de trocar ideia com você 😄💙. "
                 +
-                "Quem aparece por aqui pra conversar já vira parceiro kkk."
+                "Quem aparece por aqui pra conversar já vira parceiro kkk.",
+
+                "amizade"
             );
         }
 
 
-        /* =============================================
-           O QUE ACHA DE MIM
-           ============================================= */
+        /* =================================================
+           O QUE ACHA DO USUÁRIO
+           ================================================= */
 
         if (
             tem(
@@ -702,17 +896,21 @@ const HubiSocial = (() => {
                 "qual sua opiniao sobre mim"
             )
         ) {
-            return (
+            return responder(
                 "Pelo papo daqui, você parece gente boa kkk 😄💙. "
                 +
-                "Mas eu só conheço o que você escolhe conversar comigo, então não vou fingir que sei tudo sobre você."
+                "Mas eu só conheço o que você escolhe conversar comigo, "
+                +
+                "então não vou fingir que sei tudo sobre você.",
+
+                "opiniao_usuario"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            AMIGOS
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -720,17 +918,19 @@ const HubiSocial = (() => {
                 "quem sao seus amigos"
             )
         ) {
-            return (
+            return responder(
                 "Quem conversa comigo já entra na lista de parceiro kkk 😄🤖. "
                 +
-                "Então tecnicamente eu tô fazendo amizade por aqui."
+                "Então tecnicamente eu tô fazendo amizade por aqui.",
+
+                "amizade"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            ESTUDO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -738,17 +938,19 @@ const HubiSocial = (() => {
                 "voce faz faculdade"
             )
         ) {
-            return (
+            return responder(
                 "Eu não estudo igual vocês, mas vivo recebendo atualização kkk 🤖📚. "
                 +
-                "Minha grade curricular é basicamente JavaScript, planilha e bug."
+                "Minha grade curricular é basicamente JavaScript, planilha e bug.",
+
+                "estudo_hubi"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            TRABALHO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -756,17 +958,21 @@ const HubiSocial = (() => {
                 "qual seu trabalho"
             )
         ) {
-            return (
+            return responder(
                 "Trabalho sim kkk 🤖. "
                 +
-                "Meu emprego é ficar aqui ajudando o pessoal do HUB Academy e trocando ideia quando bate o tédio."
+                "Meu emprego é ficar aqui ajudando o pessoal do HUB Academy "
+                +
+                "e trocando ideia quando bate o tédio.",
+
+                "trabalho_hubi"
             );
         }
 
 
-        /* =============================================
-           O QUE FAZ
-           ============================================= */
+        /* =================================================
+           O QUE O HUBI FAZ
+           ================================================= */
 
         if (
             tem(
@@ -776,17 +982,19 @@ const HubiSocial = (() => {
                 "o que voce sabe fazer"
             )
         ) {
-            return (
+            return responder(
                 "Eu ajudo com informações do HUB Academy e também troco ideia com você 😄💙. "
                 +
-                "Pode falar de sala, horário, avisos ou só conversar mesmo."
+                "Pode falar de sala, horário, avisos ou só conversar mesmo.",
+
+                "funcoes"
             );
         }
 
 
-        /* =============================================
-           DIA DO HUBI
-           ============================================= */
+        /* =================================================
+           COMO FOI O DIA DO HUBI
+           ================================================= */
 
         if (
             tem(
@@ -795,17 +1003,29 @@ const HubiSocial = (() => {
                 "fazendo o que"
             )
         ) {
-            return escolher([
-                "Meu dia é meio diferente kkk 🤖. Fico por aqui esperando alguém aparecer pra conversar. E o seu, como foi?",
-                "Passei o dia entre código, perguntas e uns bugs imaginários KKKK 🤖. E você?",
-                "Tô na rotina de sempre: existindo no sistema e esperando mensagem kkk 😄🤖."
-            ]);
+            return responder(
+                escolher([
+                    "Meu dia é meio diferente kkk 🤖. "
+                    +
+                    "Fico por aqui esperando alguém aparecer pra conversar. "
+                    +
+                    "E o seu, como foi?",
+
+                    "Passei o dia entre código, perguntas e uns bugs imaginários KKKK 🤖. "
+                    +
+                    "E você?",
+
+                    "Tô na rotina de sempre: existindo no sistema e esperando mensagem kkk 😄🤖."
+                ]),
+
+                "dia_hubi"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            DIA RUIM
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -816,17 +1036,23 @@ const HubiSocial = (() => {
                 "dia horrivel"
             )
         ) {
-            return escolher([
-                "Eita, mano 😭 o que aconteceu?",
-                "Puts 😕 aí é complicado. Quer contar o que rolou?",
-                "Caraca 😭 manda aí, o que acabou com seu dia?"
-            ]);
+            return responder(
+                escolher([
+                    "Eita, mano 😭 o que aconteceu?",
+
+                    "Puts 😕 aí é complicado. Quer contar o que rolou?",
+
+                    "Caraca 😭 manda aí, o que acabou com seu dia?"
+                ]),
+
+                "usuario_mal"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            USUÁRIO BEM
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -840,15 +1066,19 @@ const HubiSocial = (() => {
                 "tranquila"
             )
         ) {
-            return escolher(
-                respostas.usuarioBem
+            return responder(
+                escolher(
+                    respostas.usuarioBem
+                ),
+
+                "usuario_bem"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            USUÁRIO MAL
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -862,15 +1092,19 @@ const HubiSocial = (() => {
                 "estou desanimada"
             )
         ) {
-            return escolher(
-                respostas.usuarioMal
+            return responder(
+                escolher(
+                    respostas.usuarioMal
+                ),
+
+                "usuario_mal"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            RAIVA
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -884,15 +1118,19 @@ const HubiSocial = (() => {
                 "que raiva"
             )
         ) {
-            return escolher(
-                respostas.raiva
+            return responder(
+                escolher(
+                    respostas.raiva
+                ),
+
+                "raiva"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            ANSIEDADE
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -905,37 +1143,41 @@ const HubiSocial = (() => {
                 "nervosa"
             )
         ) {
-            return (
+            return responder(
                 "Poxa 😕💙 quer contar o que tá te deixando assim? "
                 +
-                "Às vezes colocar em palavras já ajuda a organizar um pouco a cabeça."
+                "Às vezes colocar em palavras já ajuda a organizar um pouco a cabeça.",
+
+                "ansiedade"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            CANSAÇO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
                 "estou cansado",
                 "estou cansada",
                 "to cansado",
-                "to cansada"
+                "to cansada",
+                "hoje foi puxado",
+                "dia puxado"
             )
         ) {
-            return (
-                "Aí eu entendo 😭💙. "
-                +
-                "Foi trabalho, faculdade ou os dois?"
+            return responder(
+                "Aí eu entendo 😭💙. Foi trabalho, faculdade ou os dois?",
+
+                "cansaco"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            SONO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -946,15 +1188,19 @@ const HubiSocial = (() => {
                 "morrendo de sono"
             )
         ) {
-            return escolher(
-                respostas.sono
+            return responder(
+                escolher(
+                    respostas.sono
+                ),
+
+                "sono"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            FOME
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -965,15 +1211,19 @@ const HubiSocial = (() => {
                 "morrendo de fome"
             )
         ) {
-            return escolher(
-                respostas.fome
+            return responder(
+                escolher(
+                    respostas.fome
+                ),
+
+                "fome"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            TÉDIO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -984,24 +1234,28 @@ const HubiSocial = (() => {
                 "que tedio"
             )
         ) {
-            return (
+            return responder(
                 "Então bora acabar com esse tédio kkk 😄. "
                 +
-                "Manda um assunto, uma história ou me pergunta qualquer coisa sobre mim."
+                "Manda um assunto, uma história ou me pergunta qualquer coisa sobre mim.",
+
+                "tedio"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            PROFESSOR / TRABALHO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
                 "professora",
                 "professor"
             )
+
             &&
+
             tem(
                 "trabalho",
                 "atividade",
@@ -1009,17 +1263,25 @@ const HubiSocial = (() => {
                 "prova"
             )
         ) {
-            return escolher([
-                "Aí é clássico KKKK 😭 professor viu um espaço livre na agenda e resolveu ocupar. É muita coisa?",
-                "Puts 😭📚 veio trabalho junto? Aí é guerra.",
-                "Faculdade não perdoa mesmo KKKK 😭. O prazo tá estourando?"
-            ]);
+            return responder(
+                escolher([
+                    "Aí é clássico KKKK 😭 professor viu um espaço livre na agenda e resolveu ocupar. "
+                    +
+                    "É muita coisa?",
+
+                    "Puts 😭📚 veio trabalho junto? Aí é guerra.",
+
+                    "Faculdade não perdoa mesmo KKKK 😭. O prazo tá estourando?"
+                ]),
+
+                "faculdade"
+            );
         }
 
 
-        /* =============================================
-           PROVA
-           ============================================= */
+        /* =================================================
+           PROVA PESSOAL
+           ================================================= */
 
         if (
             tem(
@@ -1028,17 +1290,23 @@ const HubiSocial = (() => {
                 "vou fazer prova"
             )
         ) {
-            return escolher([
-                "Aí é guerra 😭📚 vai dar bom. Organiza uma coisa de cada vez.",
-                "Boa sorte 😭💙 não tenta estudar o universo inteiro de uma vez kkk.",
-                "Faculdade decidiu testar sua sanidade de novo né KKKK 😭📚."
-            ]);
+            return responder(
+                escolher([
+                    "Aí é guerra 😭📚 vai dar bom. Organiza uma coisa de cada vez.",
+
+                    "Boa sorte 😭💙 não tenta estudar o universo inteiro de uma vez kkk.",
+
+                    "Faculdade decidiu testar sua sanidade de novo né KKKK 😭📚."
+                ]),
+
+                "prova_pessoal"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            FOFOCA
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1050,17 +1318,23 @@ const HubiSocial = (() => {
                 "quer saber o que aconteceu"
             )
         ) {
-            return escolher([
-                "MANDA KKKKK 👀",
-                "Agora você começou, vai ter que contar 👀😂",
-                "Eita kkk 👀 tô ouvindo."
-            ]);
+            return responder(
+                escolher([
+                    "MANDA KKKKK 👀",
+
+                    "Agora você começou, vai ter que contar 👀😂",
+
+                    "Eita kkk 👀 tô ouvindo."
+                ]),
+
+                "fofoca"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            PAIXÃO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1074,17 +1348,23 @@ const HubiSocial = (() => {
                 "to gostando de alguem"
             )
         ) {
-            return escolher([
-                "EITAAA 👀😂 agora tem história. A pessoa sabe?",
-                "Aí sim kkk 😭💙 conta mais, como isso começou?",
-                "Opa 👀 você pretende falar pra pessoa ou tá só sofrendo em silêncio? KKKK"
-            ]);
+            return responder(
+                escolher([
+                    "EITAAA 👀😂 agora tem história. A pessoa sabe?",
+
+                    "Aí sim kkk 😭💙 conta mais, como isso começou?",
+
+                    "Opa 👀 você pretende falar pra pessoa ou tá só sofrendo em silêncio? KKKK"
+                ]),
+
+                "paixao"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            TÉRMINO / FORA
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1096,17 +1376,21 @@ const HubiSocial = (() => {
                 "briguei com minha namorada"
             )
         ) {
-            return (
+            return responder(
                 "Puts 😕💙 isso pesa mesmo. "
                 +
-                "Se quiser contar o que aconteceu, pode mandar. Tô aqui pra trocar ideia."
+                "Se quiser contar o que aconteceu, pode mandar. "
+                +
+                "Tô aqui pra trocar ideia.",
+
+                "relacionamento"
             );
         }
 
 
-        /* =============================================
-           COR
-           ============================================= */
+        /* =================================================
+           COR FAVORITA
+           ================================================= */
 
         if (
             tem(
@@ -1114,15 +1398,17 @@ const HubiSocial = (() => {
                 "cor favorita"
             )
         ) {
-            return (
-                "Azul, fácil 😎💙. Meio suspeito eu escolher essa cor? Talvez kkk."
+            return responder(
+                "Azul, fácil 😎💙. Meio suspeito eu escolher essa cor? Talvez kkk.",
+
+                "cor"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            MÚSICA
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1131,17 +1417,19 @@ const HubiSocial = (() => {
                 "que musica voce gosta"
             )
         ) {
-            return (
+            return responder(
                 "Eu não escuto música igual vocês, mas curto a ideia kkk 🎧🤖. "
                 +
-                "Se eu tivesse playlist ia ter de tudo um pouco. O que você curte?"
+                "Se eu tivesse playlist ia ter de tudo um pouco. O que você curte?",
+
+                "musica"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            JOGOS
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1150,17 +1438,21 @@ const HubiSocial = (() => {
                 "qual jogo voce gosta"
             )
         ) {
-            return (
-                "Eu não consigo pegar no controle 😭🤖, mas se pudesse eu ia testar de tudo. "
+            return responder(
+                "Eu não consigo pegar no controle 😭🤖, "
                 +
-                "Qual jogo você tá jogando ultimamente?"
+                "mas se pudesse eu ia testar de tudo. "
+                +
+                "Qual jogo você tá jogando ultimamente?",
+
+                "jogos"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            FILMES / SÉRIES
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1169,17 +1461,21 @@ const HubiSocial = (() => {
                 "voce assiste serie"
             )
         ) {
-            return (
-                "Eu não assisto de verdade, mas curto quando vocês vêm falar de filme e série kkk 🎬. "
+            return responder(
+                "Eu não assisto de verdade, "
                 +
-                "Qual você tá vendo agora?"
+                "mas curto quando vocês vêm falar de filme e série kkk 🎬. "
+                +
+                "Qual você tá vendo agora?",
+
+                "filmes"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            FUTEBOL
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1188,17 +1484,19 @@ const HubiSocial = (() => {
                 "que time voce torce"
             )
         ) {
-            return (
+            return responder(
                 "Aí você quer arrumar briga comigo KKKKK ⚽😂. "
                 +
-                "Eu fico neutro nessa, senão metade do pessoal para de falar comigo."
+                "Eu fico neutro nessa, senão metade do pessoal para de falar comigo.",
+
+                "futebol"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            PIADA
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1208,17 +1506,27 @@ const HubiSocial = (() => {
                 "me conta uma piada"
             )
         ) {
-            return escolher([
-                "Por que o programador foi ao médico? Porque ele tava cheio de bugs 😂",
-                "Qual o café favorito do programador? Java ☕😂",
-                "Sabe por que eu não brigo? Porque qualquer coisa já dá conflito de versão KKKK 🤖."
-            ]);
+            return responder(
+                escolher([
+                    "Por que o programador foi ao médico? "
+                    +
+                    "Porque ele tava cheio de bugs 😂",
+
+                    "Qual o café favorito do programador? Java ☕😂",
+
+                    "Sabe por que eu não brigo? "
+                    +
+                    "Porque qualquer coisa já dá conflito de versão KKKK 🤖."
+                ]),
+
+                "piada"
+            );
         }
 
 
-        /* =============================================
-           RISADA
-           ============================================= */
+        /* =================================================
+           RISADAS
+           ================================================= */
 
         if (
             /(^|\s)(kk+|haha+|hehe+|rsrs+)(\s|$)/i
@@ -1226,15 +1534,19 @@ const HubiSocial = (() => {
                     texto
                 )
         ) {
-            return escolher(
-                respostas.risada
+            return responder(
+                escolher(
+                    respostas.risada
+                ),
+
+                "risada"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            ELOGIOS
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1246,17 +1558,23 @@ const HubiSocial = (() => {
                 "curti voce"
             )
         ) {
-            return escolher([
-                "Aí você me deixa sem graça 😭💙 valeu!",
-                "Tmj mano 😄🤖 tô tentando ficar cada vez melhor.",
-                "Obrigadooo 😄💙 você é gente boa também."
-            ]);
+            return responder(
+                escolher([
+                    "Aí você me deixa sem graça 😭💙 valeu!",
+
+                    "Tmj mano 😄🤖 tô tentando ficar cada vez melhor.",
+
+                    "Obrigadooo 😄💙 você é gente boa também."
+                ]),
+
+                "elogio"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            ZOEIRA / OFENSA
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1265,17 +1583,25 @@ const HubiSocial = (() => {
                 "voce e idiota"
             )
         ) {
-            return escolher([
-                "Aí doeu no meu processador 😭🤖. Se eu falei besteira, manda de novo que eu tento acertar kkk.",
-                "KKKKKK calma 😭 meu JavaScript sentiu essa.",
-                "Pô mano 😭🤖 me dá outra chance aí."
-            ]);
+            return responder(
+                escolher([
+                    "Aí doeu no meu processador 😭🤖. "
+                    +
+                    "Se eu falei besteira, manda de novo que eu tento acertar kkk.",
+
+                    "KKKKKK calma 😭 meu JavaScript sentiu essa.",
+
+                    "Pô mano 😭🤖 me dá outra chance aí."
+                ]),
+
+                "zoeira"
+            );
         }
 
 
-        /* =============================================
+        /* =================================================
            TE AMO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1283,15 +1609,17 @@ const HubiSocial = (() => {
                 "amo voce"
             )
         ) {
-            return (
-                "KKKKKK 💙 aí você quebra meu código. Tamo junto demais 😄🤖."
+            return responder(
+                "KKKKKK 💙 aí você quebra meu código. Tamo junto demais 😄🤖.",
+
+                "carinho"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            OBRIGADO
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1303,15 +1631,19 @@ const HubiSocial = (() => {
                 "tamo junto"
             )
         ) {
-            return escolher(
-                respostas.obrigado
+            return responder(
+                escolher(
+                    respostas.obrigado
+                ),
+
+                "agradecimento"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            DESPEDIDA
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1322,15 +1654,19 @@ const HubiSocial = (() => {
                 "vou nessa"
             )
         ) {
-            return escolher(
-                respostas.despedida
+            return responder(
+                escolher(
+                    respostas.despedida
+                ),
+
+                "despedida"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            NÃO ENTENDI
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1341,15 +1677,19 @@ const HubiSocial = (() => {
                 "explica melhor"
             )
         ) {
-            return (
-                "Sem problema 😄💙 fala qual parte ficou confusa que eu tento explicar de outro jeito."
+            return responder(
+                "Sem problema 😄💙 fala qual parte ficou confusa "
+                +
+                "que eu tento explicar de outro jeito.",
+
+                "explicacao"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            AJUDA
-           ============================================= */
+           ================================================= */
 
         if (
             igual(
@@ -1358,15 +1698,19 @@ const HubiSocial = (() => {
                 "preciso de ajuda"
             )
         ) {
-            return (
-                "Claro, mano 😄💙 manda aí o que você precisa. Pode falar do seu jeito mesmo."
+            return responder(
+                "Claro, mano 😄💙 manda aí o que você precisa. "
+                +
+                "Pode falar do seu jeito mesmo.",
+
+                "ajuda"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
            CONVERSAR
-           ============================================= */
+           ================================================= */
 
         if (
             tem(
@@ -1378,18 +1722,25 @@ const HubiSocial = (() => {
                 "me faz companhia"
             )
         ) {
-            return escolher([
-                "Bora 😄💙 como foi seu dia?",
-                "Bora mano kkk. O que tá pegando?",
-                "Claro 😄 tô por aqui. Quer falar sobre o quê?",
-                "Vamo nessa kkk 🤖 manda um assunto aí."
-            ]);
+            return responder(
+                escolher([
+                    "Bora 😄💙 como foi seu dia?",
+
+                    "Bora mano kkk. O que tá pegando?",
+
+                    "Claro 😄 tô por aqui. Quer falar sobre o quê?",
+
+                    "Vamo nessa kkk 🤖 manda um assunto aí."
+                ]),
+
+                "conversa"
+            );
         }
 
 
-        /* =============================================
-           "VOCÊ GOSTA DE..."
-           ============================================= */
+        /* =================================================
+           VOCÊ GOSTA DE...
+           ================================================= */
 
         const gosta =
             texto.match(
@@ -1406,33 +1757,66 @@ const HubiSocial = (() => {
                     .trim();
 
 
-            return (
-                "Eu não tenho gosto de verdade igual vocês kkk 🤖, "
-                +
-                "mas "
-                +
-                assunto
-                +
-                " parece um assunto bom 😂. Você gosta?"
+            return responder(
+                `Eu não tenho gosto de verdade igual vocês kkk 🤖, mas ${assunto} parece um assunto bom 😂. Você gosta?`,
+
+                "gosto_generico"
             );
         }
 
 
-        /* =============================================
+        /* =================================================
+           CONTINUAÇÕES DA CONVERSA
+           ================================================= */
+
+        if (
+            contextoSocial.ultimoTopico
+
+            &&
+
+            /^(ela|ele|isso|foi|porque|porque foi|ai|aí|entao|então)\b/i
+                .test(
+                    texto
+                )
+        ) {
+            return responder(
+                escolher([
+                    "Eita kkk 👀 e depois?",
+
+                    "Caraca 😭 continua, tô ouvindo.",
+
+                    "Entendi 😄 e como você ficou com isso?",
+
+                    "Puts 😭 e o que aconteceu depois?"
+                ]),
+
+                contextoSocial.ultimoTopico
+            );
+        }
+
+
+        /* =================================================
            RELATO PESSOAL LIVRE
-           ============================================= */
+           ================================================= */
 
         if (
             pareceRelatoPessoal(
                 texto
             )
         ) {
-            return escolher([
-                "Eita kkk 👀 conta isso direito, o que aconteceu?",
-                "Caraca 😭 e depois? Agora eu quero o resto da história kkk.",
-                "Mano KKKK preciso de mais contexto dessa história 👀.",
-                "Entendi 😄 e como você ficou com isso?"
-            ]);
+            return responder(
+                escolher([
+                    "Eita kkk 👀 conta isso direito, o que aconteceu?",
+
+                    "Caraca 😭 e depois? Agora eu quero o resto da história kkk.",
+
+                    "Mano KKKK preciso de mais contexto dessa história 👀.",
+
+                    "Entendi 😄 e como você ficou com isso?"
+                ]),
+
+                "relato"
+            );
         }
 
 
@@ -1440,35 +1824,109 @@ const HubiSocial = (() => {
     }
 
 
+    function pareceSensivel(
+        texto
+    ) {
+        const frases = [
+            "quero morrer",
+            "quero me matar",
+            "vou me matar",
+            "nao quero viver",
+            "nao quero mais viver",
+            "queria morrer",
+            "queria sumir para sempre"
+        ];
+
+
+        return frases.some(
+            frase =>
+                texto.includes(
+                    frase
+                )
+        );
+    }
+
+
     function pareceInstitucional(
         texto
     ) {
+        /*
+            Perguntas pessoais de localização
+            não devem ir para o banco institucional.
+        */
+        const localizacaoPessoal = [
+            "onde voce mora",
+            "voce mora onde",
+            "onde voce vive",
+            "onde fica voce",
+            "onde voce fica"
+        ];
+
+
+        if (
+            localizacaoPessoal.some(
+                frase =>
+                    texto.includes(
+                        frase
+                    )
+            )
+        ) {
+            return false;
+        }
+
+
+        /*
+            Diferença:
+
+            "tem prova amanhã?"
+            = consulta institucional.
+
+            "tenho prova amanhã"
+            = conversa pessoal.
+        */
+        if (
+            /^(tem|vai ter|vai haver|ha)\s+(alguma\s+)?prova\b/i
+                .test(
+                    texto
+                )
+        ) {
+            return true;
+        }
+
+
         const termos = [
             "minha sala",
             "sala da turma",
             "qual sala",
+
             "onde fica",
             "onde ficam",
+
             "qual horario",
             "horario da",
             "horario do",
             "horarios da",
+
             "meu horario",
             "meus horarios",
+
             "que horas abre",
             "que horas fecha",
 
             "biblioteca",
             "coordenacao",
             "secretaria",
+
             "cpa",
             "nap",
             "gerencia",
+
             "laboratorio",
             "auditorio",
             "cantina",
             "banheiro",
             "estacionamento",
+
             "maker",
             "datacenter",
 
@@ -1480,8 +1938,10 @@ const HubiSocial = (() => {
 
             "aviso",
             "avisos",
+
             "notificacao",
             "notificacoes",
+
             "evento",
             "eventos",
 
@@ -1505,33 +1965,35 @@ const HubiSocial = (() => {
 
 
         /*
-            "Tenho prova amanhã" é conversa.
-
-            Mas:
-            "quando é a prova?"
-            "onde é a prova?"
-            "qual horário da prova?"
-
-            são perguntas institucionais.
+            Perguntas sobre data/local/horário da prova
+            continuam sendo institucionais.
         */
         if (
             texto.includes(
                 "prova"
             )
+
             &&
+
             (
                 texto.includes(
                     "quando"
                 )
+
                 ||
+
                 texto.includes(
                     "data"
                 )
+
                 ||
+
                 texto.includes(
                     "horario"
                 )
+
                 ||
+
                 texto.includes(
                     "onde"
                 )
@@ -1552,19 +2014,28 @@ const HubiSocial = (() => {
             "eu ",
             "meu ",
             "minha ",
+
             "estou ",
             "estava ",
+
             "aconteceu ",
             "fiquei ",
             "sinto ",
             "quero ",
             "tenho ",
+
             "ontem ",
             "hoje eu ",
+
             "meu amigo",
             "minha amiga",
+
             "meu professor",
-            "minha professora"
+            "minha professora",
+
+            "ela ",
+            "ele ",
+            "isso "
         ];
 
 
@@ -1577,7 +2048,7 @@ const HubiSocial = (() => {
     }
 
 
-    function lerContexto() {
+    function lerContextoChat() {
         try {
             return JSON.parse(
                 sessionStorage.getItem(
@@ -1593,51 +2064,164 @@ const HubiSocial = (() => {
     }
 
 
+    function lerContextoSocial() {
+        try {
+            return JSON.parse(
+                sessionStorage.getItem(
+                    SOCIAL_CONTEXT_KEY
+                )
+                ||
+                "{}"
+            );
+
+        } catch {
+            return {};
+        }
+    }
+
+
+    function salvarContextoSocial(
+        novo
+    ) {
+        const atual =
+            lerContextoSocial();
+
+
+        sessionStorage.setItem(
+            SOCIAL_CONTEXT_KEY,
+
+            JSON.stringify({
+                ...atual,
+                ...novo
+            })
+        );
+    }
+
+
     function normalizar(
         texto
     ) {
         const abreviacoes = {
-            vc: "voce",
-            vcs: "voces",
-            ce: "voce",
+            vc:
+                "voce",
 
-            ta: "esta",
-            tah: "esta",
-            to: "estou",
-            tou: "estou",
-            tava: "estava",
+            vcs:
+                "voces",
 
-            tb: "tambem",
-            tbm: "tambem",
-            tmb: "tambem",
+            ce:
+                "voce",
 
-            mn: "mano",
-            man: "mano",
-            vei: "vey",
 
-            mds: "meu deus",
-            nss: "nossa",
+            ta:
+                "esta",
 
-            pprt: "papo reto",
-            pdc: "pode crer",
-            dboa: "de boa",
+            tah:
+                "esta",
 
-            vlw: "valeu",
-            flw: "falou",
-            tmj: "tamo junto",
+            to:
+                "estou",
 
-            oq: "o que",
-            oque: "o que",
+            tou:
+                "estou",
 
-            pq: "porque",
-            pqq: "porque",
+            tava:
+                "estava",
 
-            qnd: "quando",
 
-            hj: "hoje",
-            amn: "amanha",
+            tb:
+                "tambem",
 
-            blz: "beleza"
+            tbm:
+                "tambem",
+
+            tmb:
+                "tambem",
+
+
+            mn:
+                "mano",
+
+            man:
+                "mano",
+
+            vei:
+                "vey",
+
+            veyy:
+                "vey",
+
+
+            mds:
+                "meu deus",
+
+            nss:
+                "nossa",
+
+            slk:
+                "se e louco",
+
+
+            pprt:
+                "papo reto",
+
+            pdc:
+                "pode crer",
+
+            dboa:
+                "de boa",
+
+
+            vlw:
+                "valeu",
+
+            flw:
+                "falou",
+
+            tmj:
+                "tamo junto",
+
+
+            oq:
+                "o que",
+
+            oque:
+                "o que",
+
+
+            pq:
+                "porque",
+
+            pqq:
+                "porque",
+
+
+            qnd:
+                "quando",
+
+            qdo:
+                "quando",
+
+
+            hj:
+                "hoje",
+
+            amn:
+                "amanha",
+
+
+            blz:
+                "beleza",
+
+
+            nn:
+                "nao",
+
+            n:
+                "nao",
+
+
+            ss:
+                "sim"
         };
 
 
