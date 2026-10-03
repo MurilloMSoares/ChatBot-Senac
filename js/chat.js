@@ -1920,6 +1920,7 @@ const HubiChat = (() => {
                 "quero morrer",
                 "quero me matar",
                 "vou me matar",
+                "nao quero viver",
                 "nao quero mais viver",
                 "queria morrer",
                 "queria sumir para sempre"

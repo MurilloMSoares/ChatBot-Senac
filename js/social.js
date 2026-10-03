@@ -131,6 +131,27 @@ const HubiSocial = (() => {
             eventoClique,
             true
         );
+
+
+        /*
+            Ao iniciar uma nova conversa,
+            limpa também a memória social do HUBI.
+        */
+        document
+            .getElementById(
+                "newChatButton"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+                    sessionStorage.removeItem(
+                        SOCIAL_CONTEXT_KEY
+                    );
+
+                    pendente =
+                        null;
+                }
+            );
     }
 
 
