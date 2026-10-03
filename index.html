@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#071a2d">
+    <meta name="description"
+        content="HUBI, assistente virtual do Senac para informações de salas, horários, avisos e dúvidas frequentes.">
+
+    <title>HUBI • Assistente virtual do Senac</title>
+
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app" id="app">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+            <div class="sidebar-header">
+                <a class="brand" href="index.html" aria-label="HUBI - página inicial">
+                    <span class="brand-logo">
+                        <img src="assets/logo.png" alt="Logo do HUBI">
+                    </span>
+
+                    <span class="brand-copy sidebar-label">
+                        <strong>HUBI</strong>
+                        <small>Assistente virtual do Senac</small>
+                    </span>
+                </a>
+
+                <button class="icon-button sidebar-mobile-close" id="sidebarMobileClose" type="button"
+                    aria-label="Fechar menu">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <button class="new-chat-button" id="newChatButton" type="button" data-tooltip="Nova conversa"
+                aria-label="Nova conversa">
+                <span class="new-chat-icon" aria-hidden="true">+</span>
+                <span class="sidebar-label">Nova conversa</span>
+            </button>
+
+            <nav class="sidebar-nav" aria-label="Navegação do HUBI">
+                <button class="nav-item active" type="button" data-action="home" data-tooltip="Início"
+                    aria-label="Início">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 11.5 12 4l9 7.5"></path>
+                            <path d="M5.5 10v10h13V10"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-label">Início</span>
+                </button>
+
+                <button class="nav-item" type="button" data-action="notifications" data-tooltip="Avisos"
+                    aria-label="Avisos">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                            <path d="M10 21h4"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-label">Avisos</span>
+                    <span class="nav-badge" id="notificationBadge" aria-label="0 avisos">0</span>
+                </button>
+
+                <button class="nav-item" type="button" data-action="about" data-tooltip="Sobre o HUBI"
+                    aria-label="Sobre o HUBI">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M12 11v6"></path>
+                            <path d="M12 7h.01"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-label">Sobre</span>
+                </button>
+
+                <button class="nav-item" type="button" data-action="accessibility" data-tooltip="Acessibilidade"
+                    aria-label="Acessibilidade">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M5 9h14"></path>
+                            <path d="M12 7v7"></path>
+                            <path d="m8 21 4-7 4 7"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-label">Acessibilidade</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a class="admin-link" href="admin.html" data-tooltip="Desenvolvedor" aria-label="Área do desenvolvedor">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="8" r="4"></circle>
+                            <path d="M5 21c.5-4 3-6 7-6s6.5 2 7 6"></path>
+                        </svg>
+                    </span>
+
+                    <span class="admin-link-copy sidebar-label">
+                        <strong>Desenvolvedor</strong>
+                        <small>Área restrita</small>
+                    </span>
+                </a>
+
+                <button class="collapse-button" id="collapseButton" type="button" data-tooltip="Recolher menu"
+                    aria-label="Recolher menu lateral">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m15 18-6-6 6-6"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-label">Recolher menu</span>
+                </button>
+
+                <span class="sidebar-version sidebar-label">HUBI • v3.1</span>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="mobile-header">
+                <button class="mobile-header-button" id="mobileMenuButton" type="button" aria-label="Abrir menu">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+
+                <a class="mobile-brand" href="index.html" aria-label="HUBI - início">
+                    <img src="assets/logo.png" alt="">
+                    <span>
+                        <strong>HUBI</strong>
+                        <small>Assistente virtual do Senac</small>
+                    </span>
+                </a>
+
+                <button class="mobile-header-button mobile-notification-button" id="mobileNotificationButton"
+                    type="button" aria-label="Abrir avisos">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                        <path d="M10 21h4"></path>
+                    </svg>
+                    <span class="mobile-notification-badge" id="mobileNotificationBadge">0</span>
+                </button>
+            </header>
+
+            <section class="notification-area hidden" id="notificationArea" aria-live="polite">
+                <article class="notification-card" id="notificationCard">
+                    <div class="notification-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                            <path d="M10 21h4"></path>
+                        </svg>
+                    </div>
+
+                    <div class="notification-copy">
+                        <div class="notification-meta">
+                            <span class="notification-priority" id="notificationPriority">Aviso</span>
+                            <span class="notification-counter" id="notificationCounter"></span>
+                        </div>
+                        <strong id="notificationTitle"></strong>
+                        <p id="notificationMessage"></p>
+                    </div>
+
+                    <div class="notification-actions">
+                        <button id="previousNotification" type="button" aria-label="Aviso anterior">‹</button>
+                        <button id="nextNotification" type="button" aria-label="Próximo aviso">›</button>
+                        <button class="notification-close" id="closeNotification" type="button"
+                            aria-label="Fechar aviso">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M6 6l12 12M18 6 6 18"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </article>
+            </section>
+
+            <section class="chat" aria-label="Conversa com o HUBI">
+                <div class="chat-scroll" id="chatScroll">
+                    <section class="welcome" id="welcome">
+                        <div class="robot-area">
+                            <span class="robot-glow" aria-hidden="true"></span>
+                            <img class="robot" src="assets/robo.png" alt="HUBI, mascote virtual do Senac">
+                            <span class="online-badge"><i></i>Online</span>
+                        </div>
+
+                        <div class="welcome-copy">
+                            <span class="welcome-label">ASSISTENTE VIRTUAL DO SENAC</span>
+                            <h1 id="welcomeGreeting">Olá! 👋</h1>
+                            <h2>Eu sou o HUBI. Como posso ajudar?</h2>
+                            <p>
+                                Consulte sua sala, veja horários, acompanhe avisos e encontre informações cadastradas
+                                pela equipe responsável.
+                            </p>
+                        </div>
+
+                        <div class="suggestions" aria-label="Sugestões rápidas">
+                            <button class="suggestion-card" type="button" data-question="Qual é a minha sala hoje?">
+                                <span class="suggestion-icon blue">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M4 21V3h16v18"></path>
+                                        <path d="M9 21v-5h6v5"></path>
+                                        <path d="M8 7h2M14 7h2M8 11h2M14 11h2"></path>
+                                    </svg>
+                                </span>
+                                <span class="suggestion-copy">
+                                    <strong>Minha sala</strong>
+                                    <small>Descubra onde será sua aula</small>
+                                </span>
+                                <span class="suggestion-arrow">→</span>
+                            </button>
+
+                            <button class="suggestion-card" type="button"
+                                data-question="Quais são os horários da minha turma?">
+                                <span class="suggestion-icon orange">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9"></circle>
+                                        <path d="M12 7v5l3 2"></path>
+                                    </svg>
+                                </span>
+                                <span class="suggestion-copy">
+                                    <strong>Horários</strong>
+                                    <small>Consulte os horários cadastrados</small>
+                                </span>
+                                <span class="suggestion-arrow">→</span>
+                            </button>
+
+                            <button class="suggestion-card" type="button"
+                                data-question="Quais avisos e eventos estão ativos?">
+                                <span class="suggestion-icon blue">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                                        <path d="M7 3v4M17 3v4M3 10h18"></path>
+                                    </svg>
+                                </span>
+                                <span class="suggestion-copy">
+                                    <strong>Avisos</strong>
+                                    <small>Veja eventos e comunicados ativos</small>
+                                </span>
+                                <span class="suggestion-arrow">→</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <div class="messages" id="messages" aria-live="polite"></div>
+                </div>
+
+                <footer class="composer-wrapper">
+                    <div class="composer" id="composer">
+                        <textarea id="messageInput" rows="1" maxlength="500" placeholder="Digite sua pergunta..."
+                            aria-label="Digite sua mensagem para o HUBI"></textarea>
+
+                        <button class="send-button" id="sendButton" type="button" aria-label="Enviar mensagem">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m3 3 18 9-18 9 4-9-4-9Z"></path>
+                                <path d="M7 12h14"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="composer-info">As informações institucionais exibidas pelo HUBI vêm do banco cadastrado
+                        pela equipe responsável.</p>
+                </footer>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+        <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <header class="modal-header">
+                <div>
+                    <span class="modal-label" id="modalLabel">HUBI</span>
+                    <h2 id="modalTitle"></h2>
+                </div>
+
+                <button class="modal-close" id="modalClose" type="button" aria-label="Fechar janela">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18"></path>
+                    </svg>
+                </button>
+            </header>
+
+            <div class="modal-content" id="modalContent"></div>
+        </section>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+
+</html>

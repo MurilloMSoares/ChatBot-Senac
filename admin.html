@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+
+    <meta
+        name="theme-color"
+        content="#071a2d"
+    >
+
+    <meta
+        name="description"
+        content="Painel administrativo do HUBI."
+    >
+
+    <title>HUBI • Administração</title>
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="assets/logo.png"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/admin.css"
+    >
+</head>
+
+
+<body>
+
+
+    <!-- =====================================================
+         LOGIN
+    ====================================================== -->
+
+    <section
+        class="login-screen"
+        id="loginScreen"
+    >
+
+        <div
+            class="login-decoration decoration-one"
+        ></div>
+
+        <div
+            class="login-decoration decoration-two"
+        ></div>
+
+
+        <div class="login-card">
+
+
+            <!-- MARCA -->
+
+            <a
+                class="login-brand"
+                href="index.html"
+                aria-label="Voltar ao HUBI"
+            >
+
+                <span class="login-logo">
+
+                    <img
+                        src="assets/logo.png"
+                        alt="Logo do HUBI"
+                    >
+
+                </span>
+
+
+                <span>
+
+                    <strong>
+                        HUBI
+                    </strong>
+
+                    <small>
+                        Assistente virtual do Senac
+                    </small>
+
+                </span>
+
+            </a>
+
+
+            <!-- CABEÇALHO -->
+
+            <div class="login-heading">
+
+                <span>
+                    ÁREA RESTRITA
+                </span>
+
+                <h1>
+                    Entrar como desenvolvedor
+                </h1>
+
+                <p>
+                    Use suas credenciais para acessar
+                    o painel administrativo.
+                </p>
+
+            </div>
+
+
+            <!-- FORMULÁRIO -->
+
+            <form
+                class="login-form"
+                id="loginForm"
+                novalidate
+            >
+
+
+                <label for="loginUser">
+                    Usuário
+                </label>
+
+                <input
+                    id="loginUser"
+                    name="usuario"
+                    type="text"
+                    autocomplete="username"
+                    placeholder="Digite seu usuário"
+                    required
+                >
+
+
+                <label for="loginPassword">
+                    Senha
+                </label>
+
+
+                <div class="password-field">
+
+                    <input
+                        id="loginPassword"
+                        name="senha"
+                        type="password"
+                        autocomplete="current-password"
+                        placeholder="Digite sua senha"
+                        required
+                    >
+
+
+                    <button
+                        id="togglePassword"
+                        type="button"
+                        aria-label="Mostrar senha"
+                        title="Mostrar senha"
+                    >
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <path
+                                d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                            ></path>
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="2.7"
+                            ></circle>
+
+                        </svg>
+
+                    </button>
+
+                </div>
+
+
+                <p
+                    class="login-message"
+                    id="loginMessage"
+                    role="status"
+                ></p>
+
+
+                <button
+                    class="login-submit"
+                    id="loginButton"
+                    type="submit"
+                >
+                    Entrar
+                </button>
+
+            </form>
+
+
+            <!-- MODO LOCAL
+                 Mantido apenas por compatibilidade.
+                 Com a API conectada ele fica oculto.
+            -->
+
+            <div
+                class="local-mode hidden"
+                id="localModeBox"
+            >
+
+                <strong>
+                    Modo local de desenvolvimento
+                </strong>
+
+                <p>
+                    O Google Apps Script ainda não está conectado.
+                </p>
+
+                <button
+                    id="localModeButton"
+                    type="button"
+                >
+                    Acessar modo local
+                </button>
+
+            </div>
+
+
+            <a
+                class="back-to-chat"
+                href="index.html"
+            >
+                ← Voltar para o HUBI
+            </a>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         APLICAÇÃO ADMINISTRATIVA
+    ====================================================== -->
+
+    <div
+        class="admin-app hidden"
+        id="adminApp"
+    >
+
+
+        <!-- OVERLAY MOBILE -->
+
+        <div
+            class="admin-sidebar-overlay"
+            id="adminSidebarOverlay"
+        ></div>
+
+
+
+        <!-- =================================================
+             MENU LATERAL
+        ================================================== -->
+
+        <aside
+            class="admin-sidebar"
+            id="adminSidebar"
+        >
+
+
+            <!-- CABEÇALHO DO MENU -->
+
+            <div class="admin-sidebar-header">
+
+
+                <a
+                    class="admin-brand"
+                    href="index.html"
+                >
+
+                    <img
+                        src="assets/logo.png"
+                        alt="Logo do HUBI"
+                    >
+
+
+                    <span>
+
+                        <strong>
+                            HUBI
+                        </strong>
+
+                        <small>
+                            Administração
+                        </small>
+
+                    </span>
+
+                </a>
+
+
+                <button
+                    class="admin-sidebar-close"
+                    id="adminSidebarClose"
+                    type="button"
+                    aria-label="Fechar menu"
+                >
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <path
+                            d="M6 6l12 12M18 6 6 18"
+                        ></path>
+
+                    </svg>
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =================================================
+                 NAVEGAÇÃO
+            ================================================== -->
+
+            <nav
+                class="admin-nav"
+                aria-label="Navegação administrativa"
+            >
+
+
+                <!-- DASHBOARD -->
+
+                <button
+                    class="admin-nav-item active"
+                    type="button"
+                    data-page="dashboard"
+                >
+
+                    <span class="admin-nav-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    Dashboard
+
+                </button>
+
+
+
+                <!-- PERGUNTAS -->
+
+                <button
+                    class="admin-nav-item"
+                    type="button"
+                    data-page="perguntas"
+                >
+
+                    <span class="admin-nav-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M4 5h16v12H7l-3 3V5Z"
+                            ></path>
+
+                            <path
+                                d="M8 9h8M8 13h5"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    Perguntas
+
+                </button>
+
+
+
+                <!-- TURMAS -->
+
+                <button
+                    class="admin-nav-item"
+                    type="button"
+                    data-page="turmas"
+                >
+
+                    <span class="admin-nav-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <circle
+                                cx="9"
+                                cy="8"
+                                r="3"
+                            ></circle>
+
+                            <circle
+                                cx="17"
+                                cy="9"
+                                r="2"
+                            ></circle>
+
+                            <path
+                                d="M3 20c.4-4 2.8-6 6-6s5.6 2 6 6"
+                            ></path>
+
+                            <path
+                                d="M14 15c3 0 5 1.7 5 5"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    Turmas
+
+                </button>
+
+
+
+                <!-- SALAS -->
+
+                <button
+                    class="admin-nav-item"
+                    type="button"
+                    data-page="salas"
+                >
+
+                    <span class="admin-nav-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M4 21V3h16v18M9 21v-5h6v5M8 7h2M14 7h2M8 11h2M14 11h2"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    Salas e horários
+
+                </button>
+
+
+
+                <!-- ALTERAÇÕES -->
+
+                <button
+                    class="admin-nav-item"
+                    type="button"
+                    data-page="alteracoes"
+                >
+
+                    <span class="admin-nav-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M4 7h11M4 12h16M4 17h11"
+                            ></path>
+
+                            <path
+                                d="m16 4 4 3-4 3M16 14l4 3-4 3"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    Alterações de sala
+
+                </button>
+
+
+
+                <!-- NOTIFICAÇÕES -->
+
+                <button
+                    class="admin-nav-item"
+                    type="button"
+                    data-page="notificacoes"
+                >
+
+                    <span class="admin-nav-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    Notificações
+
+                </button>
+
+
+
+                <!-- HISTÓRICO -->
+
+                <button
+                    class="admin-nav-item"
+                    type="button"
+                    data-page="historico"
+                >
+
+                    <span class="admin-nav-icon">
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M3 12a9 9 0 1 0 3-6.7L3 8"
+                            ></path>
+
+                            <path
+                                d="M3 3v5h5M12 7v5l3 2"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    Histórico
+
+                </button>
+
+
+            </nav>
+
+
+
+            <!-- RODAPÉ DO MENU -->
+
+            <div class="admin-sidebar-footer">
+
+                <a href="index.html">
+                    ← Voltar ao HUBI
+                </a>
+
+
+                <button
+                    id="logoutSidebarButton"
+                    type="button"
+                >
+                    Sair do painel
+                </button>
+
+            </div>
+
+
+        </aside>
+
+
+
+        <!-- =================================================
+             CONTEÚDO PRINCIPAL
+        ================================================== -->
+
+        <main class="admin-main">
+
+
+            <!-- CABEÇALHO -->
+
+            <header class="admin-header">
+
+
+                <div class="admin-header-left">
+
+
+                    <button
+                        class="admin-mobile-menu"
+                        id="adminMobileMenu"
+                        type="button"
+                        aria-label="Abrir menu"
+                    >
+
+                        <svg viewBox="0 0 24 24">
+
+                            <path
+                                d="M4 6h16M4 12h16M4 18h16"
+                            ></path>
+
+                        </svg>
+
+                    </button>
+
+
+                    <div>
+
+                        <span class="header-label">
+                            PAINEL ADMINISTRATIVO
+                        </span>
+
+                        <h1 id="pageTitle">
+                            Dashboard
+                        </h1>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="admin-header-actions">
+
+
+                    <span
+                        class="environment-badge"
+                        id="environmentBadge"
+                    >
+                        Conectado
+                    </span>
+
+
+                    <button
+                        class="header-logout"
+                        id="logoutButton"
+                        type="button"
+                    >
+                        Sair
+                    </button>
+
+
+                </div>
+
+
+            </header>
+
+
+
+            <!-- CONTEÚDO DINÂMICO -->
+
+            <section
+                class="admin-content"
+                id="adminContent"
+            ></section>
+
+
+        </main>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         MODAL ADMINISTRATIVO
+    ====================================================== -->
+
+    <div
+        class="admin-modal-overlay"
+        id="adminModalOverlay"
+        aria-hidden="true"
+    >
+
+
+        <section
+            class="admin-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="adminModalTitle"
+        >
+
+
+            <header class="admin-modal-header">
+
+
+                <div>
+
+                    <span>
+                        ADMINISTRAÇÃO
+                    </span>
+
+                    <h2 id="adminModalTitle"></h2>
+
+                </div>
+
+
+                <button
+                    id="adminModalClose"
+                    type="button"
+                    aria-label="Fechar janela"
+                >
+
+                    <svg viewBox="0 0 24 24">
+
+                        <path
+                            d="M6 6l12 12M18 6 6 18"
+                        ></path>
+
+                    </svg>
+
+                </button>
+
+
+            </header>
+
+
+
+            <div
+                class="admin-modal-content"
+                id="adminModalContent"
+            ></div>
+
+
+        </section>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         TOASTS / MENSAGENS
+    ====================================================== -->
+
+    <div
+        class="toast-container"
+        id="toastContainer"
+        aria-live="polite"
+    ></div>
+
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+
+
+</body>
+
+</html>
