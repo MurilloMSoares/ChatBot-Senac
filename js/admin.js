@@ -2760,7 +2760,7 @@ const HubiAdmin = (() => {
                         conflitos.length
                     ) {
                         toast(
-                            `Já existe um horário sobreposto em ${
+                            `Já existe conflito de horário em ${
                                 conflitos
                                     .map(
                                         registro =>
@@ -4696,14 +4696,42 @@ const HubiAdmin = (() => {
                     }
 
 
-                    if (
+                    const mesmaTurma =
                         normalizar(
                             item.turma
                         )
-                        !==
+                        ===
                         normalizar(
                             novo.turma
+                        );
+
+
+                    const mesmaSala =
+                        normalizar(
+                            item.sala
                         )
+                        ===
+                        normalizar(
+                            novo.sala
+                        );
+
+
+                    /*
+                        Existe conflito quando:
+
+                        1. A mesma turma possui
+                           outro horário sobreposto.
+
+                        OU
+
+                        2. A mesma sala já está
+                           ocupada por outra turma
+                           no mesmo horário.
+                    */
+                    if (
+                        !mesmaTurma
+                        &&
+                        !mesmaSala
                     ) {
                         return false;
                     }

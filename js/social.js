@@ -458,6 +458,40 @@ const HubiSocial = (() => {
 
 
         /* =================================================
+           REAÇÕES CURTAS / GÍRIAS
+           ================================================= */
+
+        if (
+            igual(
+                "meu deus",
+                "nossa",
+                "se e louco",
+                "aff",
+                "afff",
+                "eita",
+                "caraca"
+            )
+            ||
+            /^(meu deus|nossa|se e louco|aff+|eita|caraca)( mano| vey)?$/i
+                .test(
+                    texto
+                )
+        ) {
+            return responder(
+                escolher([
+                    "KKKKK que foi, mano? 😭",
+                    "MDS KKKKK o que aconteceu? 👀",
+                    "Eitaaa 😭😂 manda aí, o que rolou?",
+                    "Caraca KKKK 👀 agora explica isso aí."
+                ]),
+
+                "reacao"
+            );
+        }
+
+
+
+        /* =================================================
            SAUDAÇÕES
            ================================================= */
 
